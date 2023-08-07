@@ -4,20 +4,10 @@ import { Movies } from "./components/Movies";
 import responseMovies from "./mocks/with-results.json";
 import { useId } from "react";
 
-function App() {
+function useSearch() {
   const [search, updateSearch] = useState("");
   const [error, setError] = useState(null);
   const isFirstInput = useId(true);
-  const movies = responseMovies.Search;
-
-  const mappedMovies = movies.map((movie) => {
-    return {
-      id: movie.imdbID,
-      title: movie.Title,
-      year: movie.Year,
-      poster: movie.Poster,
-    };
-  });
 
   useEffect(() => {
     if (isFirstInput.current) {
@@ -35,7 +25,23 @@ function App() {
     }
 
     setError(null);
-  }, [search]);
+  }, [search, isFirstInput]);
+
+  return { search, updateSearch, error };
+}
+
+function App() {
+  const { search, updateSearch, error } = useSearch();
+  const movies = responseMovies.Search;
+
+  const mappedMovies = movies.map((movie) => {
+    return {
+      id: movie.imdbID,
+      title: movie.Title,
+      year: movie.Year,
+      poster: movie.Poster,
+    };
+  });
 
   const handleSubmit = (event) => {
     event.preventDefault();
