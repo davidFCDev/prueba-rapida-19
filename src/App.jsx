@@ -1,8 +1,8 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import "./App.css";
 import { Movies } from "./components/Movies";
-import responseMovies from "./mocks/with-results.json";
 import { useId } from "react";
+import { searchMovies } from "./services/movies";
 
 function useSearch() {
   const [search, updateSearch] = useState("");
@@ -30,22 +30,37 @@ function useSearch() {
   return { search, updateSearch, error };
 }
 
+function useMovies({ search }) {
+  const [movies, setMovies] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const previousSearch = useRef(search);
+
+  const getMovies = async ({ search }) => {
+    if (search === previousSearch.current) return;
+    try {
+      setIsLoading(true);
+      setError(null);
+      previousSearch.current = search;
+      const newMovies = await searchMovies({ search });
+      setMovies(newMovies);
+    } catch (e) {
+      setError(e.message);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  return { movies, getMovies, isLoading, error };
+}
+
 function App() {
   const { search, updateSearch, error } = useSearch();
-  const movies = responseMovies.Search;
-
-  const mappedMovies = movies.map((movie) => {
-    return {
-      id: movie.imdbID,
-      title: movie.Title,
-      year: movie.Year,
-      poster: movie.Poster,
-    };
-  });
+  const { movies, getMovies, isLoading } = useMovies({ search });
 
   const handleSubmit = (event) => {
     event.preventDefault();
-    console.log("Buscando...");
+    getMovies({ search });
   };
 
   const handleChange = (event) => {
@@ -70,9 +85,7 @@ function App() {
         {error && <p style={{ color: "red" }}>{error}</p>}
       </header>
 
-      <main>
-        <Movies movies={mappedMovies} />
-      </main>
+      <main>{isLoading && <Movies movies={movies} />}</main>
     </div>
   );
 }
