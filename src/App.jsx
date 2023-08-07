@@ -1,8 +1,8 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import "./App.css";
 import { Movies } from "./components/Movies";
 import { useId } from "react";
-import { searchMovies } from "./services/movies";
+import { useMovies } from "./hooks/useMovies";
 
 function useSearch() {
   const [search, updateSearch] = useState("");
@@ -30,37 +30,18 @@ function useSearch() {
   return { search, updateSearch, error };
 }
 
-function useMovies({ search }) {
-  const [movies, setMovies] = useState([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState(null);
-  const previousSearch = useRef(search);
-
-  const getMovies = async ({ search }) => {
-    if (search === previousSearch.current) return;
-    try {
-      setIsLoading(true);
-      setError(null);
-      previousSearch.current = search;
-      const newMovies = await searchMovies({ search });
-      setMovies(newMovies);
-    } catch (e) {
-      setError(e.message);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  return { movies, getMovies, isLoading, error };
-}
-
 function App() {
+  const [sort, setSort] = useState(false);
   const { search, updateSearch, error } = useSearch();
-  const { movies, getMovies, isLoading } = useMovies({ search });
+  const { movies, getMovies, loading } = useMovies({ search });
 
   const handleSubmit = (event) => {
     event.preventDefault();
     getMovies({ search });
+  };
+
+  const handleSort = () => {
+    setSort(!sort);
   };
 
   const handleChange = (event) => {
@@ -72,20 +53,20 @@ function App() {
     <div className="page">
       <header>
         <h1>Buscador de películas</h1>
-        <form onSubmit={handleSubmit}>
+        <form className="form" onSubmit={handleSubmit}>
           <input
-            onChange={handleChange}
             name="query"
+            onChange={handleChange}
             value={search}
             type="text"
             placeholder="Buscar..."
           />
-          <button type="submit">Buscar</button>
+          <button>Buscar</button>
         </form>
         {error && <p style={{ color: "red" }}>{error}</p>}
       </header>
 
-      <main>{isLoading && <Movies movies={movies} />}</main>
+      <main>{loading ? <p>Loading...</p> : <Movies movies={movies} />}</main>
     </div>
   );
 }
